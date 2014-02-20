@@ -3,12 +3,9 @@
 
 #Problem: Read in NetLogo File
 setwd("C:/Users/Thomas/Downloads")
-
 temporary <- scan(file="NetLogo.csv", what=" ", sep=",") 
 #create object 'temporary', which contains every element of the NetLogo csv. This makes it easier to figure out 
 #how many lines we should skip to find where to begin extracting information. 
-
-output <- vector("list") #create object we will store the results of the NetLogo model in
 
 ####MAIN FILE NAME####
 #Start creating the main file name. Scan in the 2nd and 3rd lines of the file, and select only the first and 85th
@@ -20,7 +17,6 @@ main.file.name <- unlist(strsplit(main.file.name, split=" "))[-4] #use -4 to dro
 main.file.name <- paste(main.file.name[1], main.file.name[2], main.file.name[3], sep=".")
 main.file.name <- gsub(":", "-", main.file.name) #use gsub to get rid of illegal characters in file name
 main.file.name <- gsub("/", "-", main.file.name)
-output$toplevel <- main.file.name #store the file name as the first element in the output list 
 
 ####GLOBALS####
 # First: read in column names of the Globals
@@ -84,7 +80,6 @@ for (i in 1:length(global.colnames2)){
   globals[[i]] <- global.values2[i]
 }
 names(globals) <- global.colnames2
-output$globals <- globals #store the list of global parameters as the first element in the output list
 
 ####TURTLES####
 # First: decide how many lines to read in, and where to start reading in. Use the same process that was used in 
@@ -175,7 +170,7 @@ adding.columns2 <- function(DATA, columnNumber=length(districts.colnames)){
   return(turtle.mat)
 }
 
-#Then we run this vector on each of the 5 subsets of the TURTLE data. We also convert each resulting matrix 
+#Then we run this function on each of the 5 subsets of the TURTLE data. We also convert each resulting matrix 
 # into a dataframe and add the relevant column names. 
 districts.data <- data.frame(adding.columns2(DATA=districts, length(districts.colnames)))
 voters.data <- data.frame(adding.columns2(DATA=voters, length(voters.colnames)))
@@ -206,13 +201,6 @@ activists.data <- drop.missing.columns(activists.data)
 parties.data <- drop.missing.columns(parties.data)
 candidates.data <- drop.missing.columns(candidates.data)
 
-#Finally, we'll store all five of these datasets in a list called "output", which we'll return to later
-output$districts.data <- districts.data
-output$voters.data <- voters.data
-output$activists.data <- activists.data
-output$parties.data <- parties.data
-output$candidates.data <- candidates.data
-
 ####PLOTS####
 
 # First: decide how many lines to read in, and where to start reading in. Use the same general process that was used in 
@@ -228,7 +216,6 @@ plot.2.skip <- D2.begin + 13 #line number to start reading in data for dimension
 plot.2.end <- D3.begin - 2 #line number to stop reading in data for dimension 2
 plot.3.skip <- D3.begin + 13 #line number to start reading in data for dimension 3
 plot.3.end <- D4.begin - 2 #line number to stop reading in data for dimension 3
-
 
 #Next, create three vectors of column names for each dimension: D1, D2, and D3
 D1.names <- scan(file="NetLogo.csv", skip=plot.1.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
@@ -269,35 +256,6 @@ D1.data <- drop.missing.columns2(D1.data)
 D2.data <- drop.missing.columns2(D2.data)
 D3.data <- drop.missing.columns2(D3.data)
 
-#Add these new dataframes to the output list
-output$D1.data <- D1.data
-output$D2.data <- D2.data
-output$D3.data <- D3.data
-
-#Next, create 3 pdf files, one for each data set. Each pdf will have 6 graphs in it: one for 
-#each color of candidate, activist, and voter
-par(mfrow=c(3,2))
-plot(as.numeric(as.character(D1.data$x)), as.numeric(as.character(D1.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
-plot(as.numeric(as.character(D1.data$x.1)), as.numeric(as.character(D1.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
-plot(as.numeric(as.character(D1.data$x.2)), as.numeric(as.character(D1.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
-plot(as.numeric(as.character(D1.data$x.5)), as.numeric(as.character(D1.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
-plot(as.numeric(as.character(D1.data$x.3)), as.numeric(as.character(D1.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
-plot(as.numeric(as.character(D1.data$x.4)), as.numeric(as.character(D1.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
-
-plot(as.numeric(as.character(D2.data$x)), as.numeric(as.character(D2.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
-plot(as.numeric(as.character(D2.data$x.1)), as.numeric(as.character(D2.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
-plot(as.numeric(as.character(D2.data$x.2)), as.numeric(as.character(D2.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
-plot(as.numeric(as.character(D2.data$x.5)), as.numeric(as.character(D2.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
-plot(as.numeric(as.character(D2.data$x.3)), as.numeric(as.character(D2.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
-plot(as.numeric(as.character(D2.data$x.4)), as.numeric(as.character(D2.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
-
-plot(as.numeric(as.character(D3.data$x)), as.numeric(as.character(D3.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
-plot(as.numeric(as.character(D3.data$x.1)), as.numeric(as.character(D3.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
-plot(as.numeric(as.character(D3.data$x.2)), as.numeric(as.character(D3.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
-plot(as.numeric(as.character(D3.data$x.5)), as.numeric(as.character(D3.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
-plot(as.numeric(as.character(D3.data$x.3)), as.numeric(as.character(D3.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
-plot(as.numeric(as.character(D3.data$x.4)), as.numeric(as.character(D3.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
-
 #Next we create the WINNERS dataset which we can turn into a .csv
 Winners.begin <- ((which(temporary=="\"WINNERS\"") - 1)/84 + 1) + 10 #I add 10 at the end to avoid reading 
                                                                       #in the miscellaneous information
@@ -309,14 +267,7 @@ Winners.data <- data.frame(matrix(Winners.data, nrow=Winners.lines.to.read, byro
 colnames(Winners.data) <- Winners.colnames
 Winners.data <- drop.missing.columns2(Winners.data)
 
-#Now we take this dataset and use it to make a plot
-par(mfrow=c(1,1))
-plot(as.numeric(as.character(Winners.data[,1])), as.numeric(as.character(Winners.data[,2])), type="l", col="blue", 
-     xlab="Time Period", ylab="Percent of Vote")
-lines(as.numeric(as.character(Winners.data[,5])), as.numeric(as.character(Winners.data[,6])), type="l", col="black")
-lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winners.data[,10])), type="l", col="red")
-
-#Next we create the POLARIZATION csv and plot
+#Next we create the POLARIZATION .csv
 polarization.begin <- ((which(temporary=="\"POLARIZATION\"") - 1)/84 + 1) + 10 #I add 10 at the end to avoid reading 
                                                                               #in the miscellaneous information
 polarization.end <- (which(temporary=="\"INCUMBENT\"") - 1)/84 - 1 #returns 9490
@@ -327,14 +278,7 @@ polarization.data <- data.frame(matrix(polarization.data, nrow=polarization.line
 colnames(polarization.data) <- polarization.colnames
 polarization.data <- drop.missing.columns2(polarization.data)
 
-#And now the plot...
-plot(as.numeric(as.character(polarization.data[,1])), as.numeric(as.character(polarization.data[,2])), type="l", col="black", 
-     xlab="Pair of Candidates/Activists/Voters", ylab="Degree of Partisanship", ylim=c(0, 10))
-lines(as.numeric(as.character(polarization.data[,5])), as.numeric(as.character(polarization.data[,6])), type="l", col="dark green")
-lines(as.numeric(as.character(polarization.data[,9])), as.numeric(as.character(polarization.data[,10])), type="l", col="purple")
-legend("bottomright", c("Candidates", "Voters", "Activists"), col=c("black", "dark green", "purple"), lty=c(1, 1, 1), cex=0.75)
-
-#Finally, create the INCUMBENT csv and plot
+#Finally, create the INCUMBENT .csv
 incumbent.begin <- ((which(temporary=="\"INCUMBENT\"") - 1)/84 + 1) + 8 #I add 8 at the end to avoid reading 
 #in the miscellaneous information
 incumbent.end <- (which(temporary=="EXTENSIONS") - 1)/84 - 1 #returns 9669
@@ -345,21 +289,109 @@ incumbent.data <- data.frame(matrix(incumbent.data, nrow=incumbent.lines.to.read
 colnames(incumbent.data) <- incumbent.colnames
 incumbent.data <- drop.missing.columns2(incumbent.data)
 
-#And now the plot...
+####WRITING THE FILES####
+setwd("C:/Users/Thomas/Desktop") #sets the working directory to wherever you want the file stored
+dir.create(main.file.name) #creates the main folder that everything else gets stored in; REMINDER: main.file.name
+                            #was one of the first objects we created up above
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, sep="")) #resets the working directory to the main folder
+dir.create("GLOBALS")
+dir.create("TURTLES")
+dir.create("PLOTS")
+
+#Next, we use the dump() function to write the .R file for the Globals object into the GLOBALS folder. We start
+#by redefining the working directory:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/GLOBALS", sep=""))
+dump("globals", file="Globals.R")
+
+#Next, write .csv files to TURTLE subdirectory. Start by redefining the working directory, then write in each file
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/TURTLES", sep=""))
+write.csv(districts.data, file="Districts.csv")
+write.csv(voters.data, file="Voters.csv")
+write.csv(activists.data, file="Activists.csv")
+write.csv(parties.data, file="Parties.csv")
+write.csv(candidates.data, file="Candidates.csv")
+
+#Next, create subdirectories to the PLOTS directory. Begin by redefining the working directory:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", sep=""))
+dir.create("PositionPlot")
+dir.create("WinnersPlot")
+dir.create("PolarizationPlot")
+dir.create("IncumbentsPlot")
+
+#Next create the 3 .csv files for the PositionPlot folder:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/PositionPlot", sep=""))
+write.csv(D1.data, file="D1.csv")
+write.csv(D2.data, file="D2.csv")
+write.csv(D3.data, file="D3.csv")
+
+#Next create the .pdf file for this folder:
+pdf(file="Positions.pdf")
+plot(as.numeric(as.character(D1.data$x)), as.numeric(as.character(D1.data$y)), type="l", col="red", 
+     xlab="Simulation", ylab="Average Position", main="Dimension 1", ylim=c(-5, 5))
+lines(as.numeric(as.character(D1.data$x.1)), as.numeric(as.character(D1.data$y.1)), type="l", col="blue")
+lines(as.numeric(as.character(D1.data$x.2)), as.numeric(as.character(D1.data$y.2)), type="l", col="red", lty=2)
+lines(as.numeric(as.character(D1.data$x.5)), as.numeric(as.character(D1.data$y.5)), type="l", col="blue", lty=2)
+lines(as.numeric(as.character(D1.data$x.3)), as.numeric(as.character(D1.data$y.3)), type="l", col="red", lty=3)
+lines(as.numeric(as.character(D1.data$x.4)), as.numeric(as.character(D1.data$y.4)), type="l", col="blue", lty=3)
+legend("top", c("Rep. Candidate", "Dem. Candidate", "Rep. Voter", "Dem. Voter", "Rep. Activist", "Dem. Activist"), 
+       col=c("red", "blue", "red", "blue", "red", "blue"), lty=c(1, 1, 2, 2, 3, 3), cex=0.75, ncol=2)
+
+plot(as.numeric(as.character(D2.data$x)), as.numeric(as.character(D2.data$y)), type="l", col="red", 
+     xlab="Simulation", ylab="Average Position", main="Dimension 2", ylim=c(-15, 15))
+lines(as.numeric(as.character(D2.data$x.1)), as.numeric(as.character(D2.data$y.1)), type="l", col="blue")
+lines(as.numeric(as.character(D2.data$x.2)), as.numeric(as.character(D2.data$y.2)), type="l", col="red", lty=2)
+lines(as.numeric(as.character(D2.data$x.5)), as.numeric(as.character(D2.data$y.5)), type="l", col="blue", lty=2)
+lines(as.numeric(as.character(D2.data$x.3)), as.numeric(as.character(D2.data$y.3)), type="l", col="red", lty=3)
+lines(as.numeric(as.character(D2.data$x.4)), as.numeric(as.character(D2.data$y.4)), type="l", col="blue", lty=3)
+legend("top", c("Rep. Candidate", "Dem. Candidate", "Rep. Voter", "Dem. Voter", "Rep. Activist", "Dem. Activist"), 
+       col=c("red", "blue", "red", "blue", "red", "blue"), lty=c(1, 1, 2, 2, 3, 3), cex=0.75, ncol=2)
+
+plot(as.numeric(as.character(D3.data$x)), as.numeric(as.character(D3.data$y)), type="l", col="red", 
+     xlab="Simulation", ylab="Average Position", main="Dimension 3", ylim=c(-4, 4))
+lines(as.numeric(as.character(D3.data$x.1)), as.numeric(as.character(D3.data$y.1)), type="l", col="blue")
+lines(as.numeric(as.character(D3.data$x.2)), as.numeric(as.character(D3.data$y.2)), type="l", col="red", lty=2)
+lines(as.numeric(as.character(D3.data$x.5)), as.numeric(as.character(D3.data$y.5)), type="l", col="blue", lty=2)
+lines(as.numeric(as.character(D3.data$x.3)), as.numeric(as.character(D3.data$y.3)), type="l", col="red", lty=3)
+lines(as.numeric(as.character(D3.data$x.4)), as.numeric(as.character(D3.data$y.4)), type="l", col="blue", lty=3)
+legend("top", c("Rep. Candidate", "Dem. Candidate", "Rep. Voter", "Dem. Voter", "Rep. Activist", "Dem. Activist"), 
+       col=c("red", "blue", "red", "blue", "red", "blue"), lty=c(1, 1, 2, 2, 3, 3), cex=0.75, ncol=2)
+dev.off()
+
+#Next create the .csv file for the WinnersPlot folder:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/WinnersPlot", sep=""))
+write.csv(Winners.data, file="Winner.csv")
+
+#Next we create the .pdf file:
+pdf(file="Winner.pdf")
+par(mfrow=c(1,1))
+plot(as.numeric(as.character(Winners.data[,1])), as.numeric(as.character(Winners.data[,2])), type="l", col="blue", 
+     xlab="Time Period", ylab="Percent of Vote")
+lines(as.numeric(as.character(Winners.data[,5])), as.numeric(as.character(Winners.data[,6])), type="l", col="black")
+lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winners.data[,10])), type="l", col="red")
+dev.off()
+
+#Next create the .csv file for the Polarization directory:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/PolarizationPlot", sep=""))
+write.csv(polarization.data, file="Polarization.csv")
+
+#Next we create the .pdf file:
+pdf(file="Polarization.pdf")
+plot(as.numeric(as.character(polarization.data[,1])), as.numeric(as.character(polarization.data[,2])), type="l", col="black", 
+     xlab="Pair of Candidates/Activists/Voters", ylab="Degree of Partisanship", ylim=c(0, 10))
+lines(as.numeric(as.character(polarization.data[,5])), as.numeric(as.character(polarization.data[,6])), type="l", col="dark green")
+lines(as.numeric(as.character(polarization.data[,9])), as.numeric(as.character(polarization.data[,10])), type="l", col="purple")
+legend("bottomright", c("Candidates", "Voters", "Activists"), col=c("black", "dark green", "purple"), lty=c(1, 1, 1), cex=0.75)
+dev.off()
+
+#Next create the .csv file for the Incumbents directory:
+setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/IncumbentsPlot", sep=""))
+write.csv(incumbent.data, file="IncumbentWins.csv")
+
+#Finally, we create the .pdf file for the Incumbents subdirectory:
+pdf(file="IncumbentWins.pdf")
 plot(as.numeric(as.character(incumbent.data[,1])), as.numeric(as.character(incumbent.data[,2])), type="l", col="black", 
      xlab="Time Period", ylab="Percent of Incumbents in Each Party Who Win Election")
-
-
-## Save the output
-write.table(output$globals, file="~/Dropbox/2014 Spring/Programming/globals.txt")
-write.csv(output$acvitist.data, file="~/Dropbox/2014 Spring/Programming/acvitist.csv")
-
-
-
-
-
-
-
+dev.off()
 
 
 
@@ -376,7 +408,6 @@ problem4.3 <- function(n){
   show(temp)
 }
 problem4.3(7) #example of the code running
-
 
 ####Chapter 4, Problem 4####
 #create.matrix function takes 2 arguments: n is number of rows, k is number of columns. The function 
