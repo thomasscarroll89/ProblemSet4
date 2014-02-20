@@ -4,32 +4,74 @@
 #Problem: Read in NetLogo File
 setwd("C:/Users/Thomas/Downloads")
 
+temporary <- scan(file="NetLogo.csv", what=" ", sep=",") 
+#create object 'temporary', which contains every element of the NetLogo csv. This makes it easier to figure out 
+#how many lines we should skip to find where to begin extracting information. 
+
 output <- vector("list") #create object we will store the results of the NetLogo model in
 
-
 #GLOBALS
-# First: read in column names of the Globals; skip first 8 lines to avoid reading in the RANDOM STATE
-#        and other miscellaneous info
-global.colnames <- scan(file="NetLogo.csv", skip=8, nlines=1, what=" ", sep=",") 
+# First: read in column names of the Globals
+globals.skip <- (which(temporary=="GLOBALS") - 1)/84 + 1 #calculates number of lines to skip before reading
+                                                          #in Globals info. We use 84 because this NetLogo
+                                                          #file has 84 columns in it; therefore the 85th element
+                                                          #of temporary is the first element of the second row; 
+                                                          #the 169th element is the first element of the 3rd row; 
+                                                          #etc. We subtract one to make it evenly divisible by 84; 
+                                                          #then we add 1 to make sure we don't scan in the line that
+                                                          #contains headings like the word 'GLOBALS'
+global.colnames <- scan(file="NetLogo.csv", skip=globals.skip, nlines=1, what=" ", sep=",") #scan in the column names for the globals
 
 # Second: read in the actual values for the different Global parameters. These are stored on the line
 #         right after the column names, so we simply skip the same number of lines as we did in the 
 #         last step, plus 1. 
-global.values <-  scan(file="NetLogo.csv", skip=9, nlines=1, what=" ", sep=",")
+global.values <-  scan(file="NetLogo.csv", skip=globals.skip+1, nlines=1, what=" ", sep=",")
 
 # Third: clean up the global.values object by getting rid of brackets 
 temporary <- global.values
 temporary <- gsub("\\[", "", temporary)
 temporary <- gsub("\\]", "", temporary)
-temporary
 
-
-# Fourth: create an empty list, called "globals"; each element of this list will be one of the global parameters
-globals <- vector("list")
-for (i in 1: length(colnames)){
-  globals[[i]] <- global.values[i]
+# Fourth: separate each column that has a vector for a value into multiple columns, so that each column has
+# only one value. 
+temporary2 <- strsplit(temporary, split=" ") #takes temporary and turns it into a list, where every element of the list
+                                            #is a vector containing every separate element of that column
+global.length.temp <- numeric(length=length(temporary2)) #create empty numeric vector
+for(i in 1:length(temporary2)){ 
+  #create a vector that shows how many elements are in each column of the NetLogo file
+  global.length.temp[i] <- length(temporary2[[i]])
 }
-names(globals) <- global.colnames
+global.colnames2 <- rep(global.colnames, global.length.temp) #create a new vector of column names; repeat each column name by the number
+                                        #of elements that were in that column
+
+#The for loop below simply takes the new vector of column names and adds numbers to those column names that repeat
+#This allows us to differentiate between different global parameter values that used to be in the same vector
+for(i in 1:length(global.colnames2)){
+  integers <- NULL
+  n <- sum(global.colnames2[i]==global.colnames2)
+  if(n > 1){
+    integers <- 1:n  
+    global.colnames2[which(global.colnames2[i]==global.colnames2)] <- 
+      paste(global.colnames2[which(global.colnames2[i]==global.colnames2)], "(", integers, ")", sep="")
+  }
+}
+
+#As an example to help illustrate what I just did: assume the NetLogo file had a global parameter named 'testing' and 
+#in the NetLogo file this testing parameter was a vector 3 units long. Then the new objects I've created will
+#actually have three columns respectively labeled 'testing', 'testing(2)', and 'testing(3)', and each of these columns
+#will have one of the three elements of the vector from the original NetLogo file. 
+
+#Finally, we use the unlist command on temporary2 to get every parameter from the global row list as its own
+#element in a vector. Essentially this breaks up vectors in the NetLogo file, so that columns that had vector elements
+#no longer exist; instead every column has only one element in it, no vectors. 
+global.values2 <- unlist(temporary2)
+
+# Fifth: create an empty list, called "globals"; each element of this list will be one of the global parameters
+globals <- vector("list")
+for (i in 1:length(global.colnames2)){
+  globals[[i]] <- global.values2[i]
+}
+names(globals) <- global.colnames2
 output$globals <- globals #store the list of global parameters as the first element in the output list
 
 
