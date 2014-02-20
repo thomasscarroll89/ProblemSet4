@@ -313,21 +313,41 @@ Winners.data <- drop.missing.columns2(Winners.data)
 par(mfrow=c(1,1))
 plot(as.numeric(as.character(Winners.data[,1])), as.numeric(as.character(Winners.data[,2])), type="l", col="blue", 
      xlab="Time Period", ylab="Percent of Vote")
-lines(as.numeric(as.character(Winners.data[,5])), as.numeric(as.character(Winners.data[,6])), type="l", col="black",
-      xlab="Time Period", ylab="Percent of Vote")
-lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winners.data[,10])), type="l", col="red",
-      xlab="Time Period", ylab="Percent of Vote")
+lines(as.numeric(as.character(Winners.data[,5])), as.numeric(as.character(Winners.data[,6])), type="l", col="black")
+lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winners.data[,10])), type="l", col="red")
 
+#Next we create the POLARIZATION csv and plot
+polarization.begin <- ((which(temporary=="\"POLARIZATION\"") - 1)/84 + 1) + 10 #I add 10 at the end to avoid reading 
+                                                                              #in the miscellaneous information
+polarization.end <- (which(temporary=="\"INCUMBENT\"") - 1)/84 - 1 #returns 9490
+polarization.lines.to.read <- polarization.end - polarization.begin
+polarization.colnames <- scan(file="NetLogo.csv", skip=(polarization.begin - 1), nlines=1, what=" ", sep=",")
+polarization.data <- scan(file="NetLogo.csv", skip=(polarization.begin), nlines=polarization.lines.to.read, what=" ", sep=",")
+polarization.data <- data.frame(matrix(polarization.data, nrow=polarization.lines.to.read, byrow=TRUE))
+colnames(polarization.data) <- polarization.colnames
+polarization.data <- drop.missing.columns2(polarization.data)
 
+#And now the plot...
+plot(as.numeric(as.character(polarization.data[,1])), as.numeric(as.character(polarization.data[,2])), type="l", col="black", 
+     xlab="Pair of Candidates/Activists/Voters", ylab="Degree of Partisanship", ylim=c(0, 10))
+lines(as.numeric(as.character(polarization.data[,5])), as.numeric(as.character(polarization.data[,6])), type="l", col="dark green")
+lines(as.numeric(as.character(polarization.data[,9])), as.numeric(as.character(polarization.data[,10])), type="l", col="purple")
+legend("bottomright", c("Candidates", "Voters", "Activists"), col=c("black", "dark green", "purple"), lty=c(1, 1, 1), cex=0.75)
 
-## Check constant values:
-# shape
-unique(activist.data$shape);unique(cands.data$shape);unique(districts.data$shape);unique(parties.data$shape);unique(voter.data$shape)
+#Finally, create the INCUMBENT csv and plot
+incumbent.begin <- ((which(temporary=="\"INCUMBENT\"") - 1)/84 + 1) + 8 #I add 8 at the end to avoid reading 
+#in the miscellaneous information
+incumbent.end <- (which(temporary=="EXTENSIONS") - 1)/84 - 1 #returns 9669
+incumbent.lines.to.read <- incumbent.end - incumbent.begin
+incumbent.colnames <- scan(file="NetLogo.csv", skip=(incumbent.begin - 1), nlines=1, what=" ", sep=",") #vector of column names
+incumbent.data <- scan(file="NetLogo.csv", skip=(incumbent.begin), nlines=incumbent.lines.to.read, what=" ", sep=",")
+incumbent.data <- data.frame(matrix(incumbent.data, nrow=incumbent.lines.to.read, byrow=TRUE))
+colnames(incumbent.data) <- incumbent.colnames
+incumbent.data <- drop.missing.columns2(incumbent.data)
 
-# label
-unique(activist.data$label);unique(cands.data$label);unique(districts.data$label);unique(parties.data$label);unique(voter.data$label)
-# 
-unique(activist.data$label);unique(cands.data$label);unique(districts.data$label);unique(parties.data$label);unique(voter.data$label)
+#And now the plot...
+plot(as.numeric(as.character(incumbent.data[,1])), as.numeric(as.character(incumbent.data[,2])), type="l", col="black", 
+     xlab="Time Period", ylab="Percent of Incumbents in Each Party Who Win Election")
 
 
 ## Save the output
