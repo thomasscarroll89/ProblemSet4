@@ -10,6 +10,18 @@ temporary <- scan(file="NetLogo.csv", what=" ", sep=",")
 
 output <- vector("list") #create object we will store the results of the NetLogo model in
 
+####MAIN FILE NAME####
+#Start creating the main file name. Scan in the 2nd and 3rd lines of the file, and select only the first and 85th
+# elements of the vector (these correspond to the first element of each row in the csv file...which are the only
+# elements that contain any info. All the rest are empty)
+main.file.name <- scan(file="NetLogo.csv", skip=1, nlines=2, what=" ", sep=",")[c(1, 85)] 
+main.file.name <- unlist(strsplit(main.file.name, split=" "))[-4] #use -4 to drop the 4th element, which contains some info that 
+  # I don't understand, but it doesn't seem to be related to date or time
+main.file.name <- paste(main.file.name[1], main.file.name[2], main.file.name[3], sep=".")
+main.file.name <- gsub(":", "-", main.file.name) #use gsub to get rid of illegal characters in file name
+main.file.name <- gsub("/", "-", main.file.name)
+output$toplevel <- main.file.name #store the file name as the first element in the output list 
+
 ####GLOBALS####
 # First: read in column names of the Globals
 globals.skip <- (which(temporary=="GLOBALS") - 1)/84 + 1 #calculates number of lines to skip before reading
@@ -34,7 +46,7 @@ temp <- gsub("\\]", "", temp)
 
 # Fourth: separate each column that has a vector for a value into multiple columns, so that each column has
 # only one value. 
-temporary2 <- strsplit(temp, split=" ") #takes temporary and turns it into a list, where every element of the list
+temporary2 <- strsplit(temp, split=" ") #takes temp and turns it into a list, where every element of the list
                                             #is a vector containing every separate element of that column
 global.length.temp <- numeric(length=length(temporary2)) #create empty numeric vector
 for(i in 1:length(temporary2)){ 
@@ -177,12 +189,134 @@ colnames(activists.data) <- activists.colnames
 colnames(parties.data) <- parties.colnames
 colnames(candidates.data) <- candidates.colnames
 
+#Next, we go through all five datasets and drop any irrelevant columns (i.e. any columns that have all missing data)
+#Start by creating a function that drops any column with all missing values
+drop.missing.columns <- function(dataset){
+  for(i in ncol(dataset):1){
+    if(all(is.na(dataset[,i]))){ #If statement tests to see if each column contains only missing values; if it does
+      #the next line of code drops that column
+      dataset <- dataset[,-i]
+    }
+  }
+  return(dataset)
+}
+districts.data <- drop.missing.columns(districts.data)
+voters.data <- drop.missing.columns(voters.data)
+activists.data <- drop.missing.columns(activists.data)
+parties.data <- drop.missing.columns(parties.data)
+candidates.data <- drop.missing.columns(candidates.data)
+
 #Finally, we'll store all five of these datasets in a list called "output", which we'll return to later
 output$districts.data <- districts.data
 output$voters.data <- voters.data
 output$activists.data <- activists.data
 output$parties.data <- parties.data
 output$candidates.data <- candidates.data
+
+####PLOTS####
+
+# First: decide how many lines to read in, and where to start reading in. Use the same general process that was used in 
+# GLOBALS and TURTLES sections above
+D1.begin <- (which(temporary=="\"D1\"") - 1)/84 + 1 #which line in csv file begins the D1 section
+D2.begin <- (which(temporary=="\"D2\"") - 1)/84 + 1 #which line in csv file begins the D2 section
+D3.begin <- (which(temporary=="\"D3\"") - 1)/84 + 1 #which line in csv file begins the D3 section
+D4.begin <- (which(temporary=="\"D4\"") - 1)/84 + 1 #which line in csv file begins the D3 section
+
+plot.1.skip <- D1.begin + 13 #line number to start reading in data for dimension 1
+plot.1.end <- D2.begin - 2 #line number to stop reading in data for dimension 1
+plot.2.skip <- D2.begin + 13 #line number to start reading in data for dimension 2
+plot.2.end <- D3.begin - 2 #line number to stop reading in data for dimension 2
+plot.3.skip <- D3.begin + 13 #line number to start reading in data for dimension 3
+plot.3.end <- D4.begin - 2 #line number to stop reading in data for dimension 3
+
+
+#Next, create three vectors of column names for each dimension: D1, D2, and D3
+D1.names <- scan(file="NetLogo.csv", skip=plot.1.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+D2.names <- scan(file="NetLogo.csv", skip=plot.2.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+D3.names <- scan(file="NetLogo.csv", skip=plot.3.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+
+#Next, read in data for each dimension
+lines.to.read.1 <- plot.1.end - plot.1.skip
+lines.to.read.2 <- plot.2.end - plot.2.skip
+lines.to.read.3 <- plot.3.end - plot.3.skip
+
+D1.data <- scan(file="NetLogo.csv", skip=(plot.1.skip), nlines=lines.to.read.1, what=" ", sep=",")
+D2.data <- scan(file="NetLogo.csv", skip=(plot.2.skip), nlines=lines.to.read.2, what=" ", sep=",")
+D3.data <- scan(file="NetLogo.csv", skip=(plot.3.skip), nlines=lines.to.read.3, what=" ", sep=",")
+
+#A quick look at the NetLogo file reveals that none of these columns have vector elements, so we don't have to 
+# waste time dealing with that. Instead we can just convert each of these data objects above into dataframes,
+# and then add column names and read them as .csv files. 
+D1.data <- data.frame(matrix(D1.data, nrow=lines.to.read.1, byrow=TRUE))
+D2.data <- data.frame(matrix(D2.data, nrow=lines.to.read.2, byrow=TRUE))
+D3.data <- data.frame(matrix(D3.data, nrow=lines.to.read.3, byrow=TRUE))
+
+#Add column names
+colnames(D1.data) <- D1.names
+colnames(D2.data) <- D2.names
+colnames(D3.data) <- D3.names
+
+#Clean up the dataframes by dropping columns with all missing values
+drop.missing.columns2 <- function(dataset){
+  for(i in ncol(dataset):1){
+    if(all(dataset[,i]=="")){ #If statement tests to see if each column contains only missing values; if it does
+      dataset <- dataset[,-i]       #the next line of code drops that column
+    }
+  }
+  return(dataset)
+}
+D1.data <- drop.missing.columns2(D1.data)
+D2.data <- drop.missing.columns2(D2.data)
+D3.data <- drop.missing.columns2(D3.data)
+
+#Add these new dataframes to the output list
+output$D1.data <- D1.data
+output$D2.data <- D2.data
+output$D3.data <- D3.data
+
+#Next, create 3 pdf files, one for each data set. Each pdf will have 6 graphs in it: one for 
+#each color of candidate, activist, and voter
+par(mfrow=c(3,2))
+plot(as.numeric(as.character(D1.data$x)), as.numeric(as.character(D1.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
+plot(as.numeric(as.character(D1.data$x.1)), as.numeric(as.character(D1.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
+plot(as.numeric(as.character(D1.data$x.2)), as.numeric(as.character(D1.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
+plot(as.numeric(as.character(D1.data$x.5)), as.numeric(as.character(D1.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
+plot(as.numeric(as.character(D1.data$x.3)), as.numeric(as.character(D1.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
+plot(as.numeric(as.character(D1.data$x.4)), as.numeric(as.character(D1.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
+
+plot(as.numeric(as.character(D2.data$x)), as.numeric(as.character(D2.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
+plot(as.numeric(as.character(D2.data$x.1)), as.numeric(as.character(D2.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
+plot(as.numeric(as.character(D2.data$x.2)), as.numeric(as.character(D2.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
+plot(as.numeric(as.character(D2.data$x.5)), as.numeric(as.character(D2.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
+plot(as.numeric(as.character(D2.data$x.3)), as.numeric(as.character(D2.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
+plot(as.numeric(as.character(D2.data$x.4)), as.numeric(as.character(D2.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
+
+plot(as.numeric(as.character(D3.data$x)), as.numeric(as.character(D3.data$y)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Candidate")
+plot(as.numeric(as.character(D3.data$x.1)), as.numeric(as.character(D3.data$y.1)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Candidate")
+plot(as.numeric(as.character(D3.data$x.2)), as.numeric(as.character(D3.data$y.2)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Activists")
+plot(as.numeric(as.character(D3.data$x.5)), as.numeric(as.character(D3.data$y.5)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Activists")
+plot(as.numeric(as.character(D3.data$x.3)), as.numeric(as.character(D3.data$y.3)), type="l", col="red", xlab="Simulation", ylab="Average Position", main="Red Voters")
+plot(as.numeric(as.character(D3.data$x.4)), as.numeric(as.character(D3.data$y.4)), type="l", col="blue", xlab="Simulation", ylab="Average Position", main="Blue Voters")
+
+#Next we create the WINNERS dataset which we can turn into a .csv
+Winners.begin <- ((which(temporary=="\"WINNERS\"") - 1)/84 + 1) + 10 #I add 10 at the end to avoid reading 
+                                                                      #in the miscellaneous information
+Winners.end <- (which(temporary=="\"POLARIZATION\"") - 1)/84 - 1 #returns 9309
+Winners.lines.to.read <- Winners.end - Winners.begin
+Winners.colnames <- scan(file="NetLogo.csv", skip=(Winners.begin - 1), nlines=1, what=" ", sep=",")
+Winners.data <- scan(file="NetLogo.csv", skip=(Winners.begin), nlines=Winners.lines.to.read, what=" ", sep=",")
+Winners.data <- data.frame(matrix(Winners.data, nrow=Winners.lines.to.read, byrow=TRUE))
+colnames(Winners.data) <- Winners.colnames
+Winners.data <- drop.missing.columns2(Winners.data)
+
+#Now we take this dataset and use it to make a plot
+par(mfrow=c(1,1))
+plot(as.numeric(as.character(Winners.data[,1])), as.numeric(as.character(Winners.data[,2])), type="l", col="blue", 
+     xlab="Time Period", ylab="Percent of Vote")
+lines(as.numeric(as.character(Winners.data[,5])), as.numeric(as.character(Winners.data[,6])), type="l", col="black",
+      xlab="Time Period", ylab="Percent of Vote")
+lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winners.data[,10])), type="l", col="red",
+      xlab="Time Period", ylab="Percent of Vote")
 
 
 
@@ -200,7 +334,6 @@ unique(activist.data$label);unique(cands.data$label);unique(districts.data$label
 write.table(output$globals, file="~/Dropbox/2014 Spring/Programming/globals.txt")
 write.csv(output$acvitist.data, file="~/Dropbox/2014 Spring/Programming/acvitist.csv")
 
-####PLOTS####
 
 
 
