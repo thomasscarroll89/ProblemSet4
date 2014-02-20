@@ -10,7 +10,7 @@ temporary <- scan(file="NetLogo.csv", what=" ", sep=",")
 
 output <- vector("list") #create object we will store the results of the NetLogo model in
 
-#GLOBALS
+####GLOBALS####
 # First: read in column names of the Globals
 globals.skip <- (which(temporary=="GLOBALS") - 1)/84 + 1 #calculates number of lines to skip before reading
                                                           #in Globals info. We use 84 because this NetLogo
@@ -28,13 +28,13 @@ global.colnames <- scan(file="NetLogo.csv", skip=globals.skip, nlines=1, what=" 
 global.values <-  scan(file="NetLogo.csv", skip=globals.skip+1, nlines=1, what=" ", sep=",")
 
 # Third: clean up the global.values object by getting rid of brackets 
-temporary <- global.values
-temporary <- gsub("\\[", "", temporary)
-temporary <- gsub("\\]", "", temporary)
+temp <- global.values
+temp <- gsub("\\[", "", temp)
+temp <- gsub("\\]", "", temp)
 
 # Fourth: separate each column that has a vector for a value into multiple columns, so that each column has
 # only one value. 
-temporary2 <- strsplit(temporary, split=" ") #takes temporary and turns it into a list, where every element of the list
+temporary2 <- strsplit(temp, split=" ") #takes temporary and turns it into a list, where every element of the list
                                             #is a vector containing every separate element of that column
 global.length.temp <- numeric(length=length(temporary2)) #create empty numeric vector
 for(i in 1:length(temporary2)){ 
@@ -74,36 +74,118 @@ for (i in 1:length(global.colnames2)){
 names(globals) <- global.colnames2
 output$globals <- globals #store the list of global parameters as the first element in the output list
 
+####TURTLES####
+# First: decide how many lines to read in, and where to start reading in. Use the same process that was used in 
+# GLOBALS section above
+turtles.skip <- (which(temporary=="TURTLES") - 1)/84 + 1 #how many lines to skip
+turtle.names <- scan(file="NetLogo.csv", skip=turtles.skip, nlines=1, what=" ", sep=",") #read in turtle column names
+turtle.names <- turtle.names[turtle.names!=""] #get rid of missing column names
 
+turtles.end <- (which(temporary=="PATCHES") - 1)/84 - 1 #calculate when to stop scanning in data for turles
+turtle.lines2read <- turtles.end - (turtles.skip + 1) #calculates number of lines to read, by subtracting when
+                                                      #Turtles section begins from when it ends
 
-#TURTLES
+#Now read in the data itself
+turtles <- scan(file="NetLogo.csv", skip=(turtles.skip+1), nlines=turtle.lines2read, what=" ", sep=",")
+  #scan in the turtle data
 
-temporary <- as.character(turtle.data[,36])
-temporary <- head(gsub("\\[", "", temporary))
-temporary <- head(gsub("\\]", "", temporary))
-temporary
+#Next clean up the data a little by removing brackets and curly brackets
+turtles <- gsub("\\[", "", temp)
+turtles <- gsub("\\]", "", temp)
+turtles <- gsub("\\{", "", temp)
+turtles <- gsub("\\}", "", temp)
 
+turtles.mat <- matrix(turtles, nrow=turtle.lines2read, byrow=TRUE) #convert data to matrix format
 
+#Following for() loop cleans up turtles matrix by getting rid of any columns that contain only empty values
+for(i in ncol(turtles.mat):1){
+  if(all(turtles.mat[,i]=="")){ #If statement tests to see if each column contains only missing values; if it does
+    #the next line of code drops that column
+    turtles.mat <- turtles.mat[,-i]
+  }
+}
 
-turtles <- scan(file="NetLogo.csv", skip=13, nlines=4786, what=" ", sep=",")
-turtles.mat <- matrix(turtles, nrow=4786, byrow=TRUE)
-turtles.mat <- turtles.mat[,-c(39:84)]
-turtle.names <- scan(file="NetLogo.csv", skip=12, n=38, what=" ", sep=",")
-turtle.data <- data.frame(turtles.mat)
-colnames(turtle.data) <- turtle.names
+# Second: We're going to subset this matrix into 5 different categories: Districts, Voters, Activists,
+#  Parties, and Candidates
+districts <- turtles.mat[turtles.mat[,9]=="breed districts",]
+voters <- turtles.mat[turtles.mat[,9]=="breed voters",]
+activists <- turtles.mat[turtles.mat[,9]=="breed activists",]
+parties <- turtles.mat[turtles.mat[,9]=="breed parties",]
+candidates <- turtles.mat[turtles.mat[,9]=="breed cands",]
 
-activist.data <- subset(turtle.data, breed=="{breed activists}")
-cands.data <- subset(turtle.data, breed=="{breed cands}")
-districts.data <- subset(turtle.data, breed=="{breed districts}")
-parties.data <- subset(turtle.data, breed=="{breed parties}")
-voter.data <- subset(turtle.data, breed=="{breed voters}")
-output$activist.data <- activist.data
-output$cands.data <- cands.data
+# Third: We're going to do something similar to what we did in the GLOBALS section above to take any columns with vectors
+# in them and make multiple columns, where each column contains one of the values of that vector. We'll do this 
+# for all 5 subsetted matrices. 
+
+adding.columns <- function(DATA, originalColumnNames){
+  row1 <- DATA[1,]
+  temporary2 <- strsplit(row1, split=" ")
+  turtles.length.temp <- numeric(length=length(temporary2))
+  for(i in 1:length(temporary2)){
+    turtles.length.temp[i] <- length(temporary2[[i]])
+    if(turtles.length.temp[i]==0){ #Some columns are empty, and so the value for length(temporary2[[i]])
+                                    # is 0. We add 1 to these observations so that we still repeat the column
+                                    # name at least once. 
+      turtles.length.temp[i] <- 1
+    }
+  }
+  dataColNames <- rep(originalColumnNames, turtles.length.temp)
+  #The for loop below simply takes the new vector of column names and adds numbers to those column names that repeat
+  #This allows us to differentiate between different global parameter values that used to be in the same vector
+  for(i in 1:length(dataColNames)){
+    integers <- NULL
+    n <- sum(dataColNames[i]==dataColNames)
+    if(n > 1){
+      integers <- 1:n  
+      dataColNames[which(dataColNames[i]==dataColNames)] <- 
+        paste(dataColNames[which(dataColNames[i]==dataColNames)], "(", integers, ")", sep="")
+    }
+  }
+  return(dataColNames)
+}
+
+districts.colnames <- adding.columns(DATA=districts, turtle.names)
+voters.colnames <- adding.columns(DATA=voters, turtle.names)
+activists.colnames <- adding.columns(DATA=activists, originalColumnNames=turtle.names)
+parties.colnames <- adding.columns(DATA=parties, turtle.names)
+candidates.colnames <- adding.columns(DATA=candidates, turtle.names)
+
+#Finally, we create another function to go through and extend each vector into its separate elements. 
+adding.columns2 <- function(DATA, columnNumber=length(districts.colnames)){
+  #First we need to replace missing values with NAs
+  for(i in 1:nrow(DATA)){
+    DATA[i,which(DATA[i,]=="")] <- NA
+  }
+  #Next we use strsplit and unlist to get each individual element; then we turn these into a matrix
+  temporary2 <- strsplit(DATA, split=" ")
+  turtle.values <- unlist(temporary2)
+  turtle.mat <- matrix(turtle.values, ncol=columnNumber)
+  return(turtle.mat)
+}
+
+#Then we run this vector on each of the 5 subsets of the TURTLE data. We also convert each resulting matrix 
+# into a dataframe and add the relevant column names. 
+districts.data <- data.frame(adding.columns2(DATA=districts, length(districts.colnames)))
+voters.data <- data.frame(adding.columns2(DATA=voters, length(voters.colnames)))
+activists.data <- data.frame(adding.columns2(DATA=activists, length(activists.colnames)))
+parties.data <- data.frame(adding.columns2(DATA=parties, length(parties.colnames)))
+candidates.data <- data.frame(adding.columns2(DATA=candidates, length(candidates.colnames)))
+
+colnames(districts.data) <- districts.colnames
+colnames(voters.data) <- voters.colnames
+colnames(activists.data) <- activists.colnames
+colnames(parties.data) <- parties.colnames
+colnames(candidates.data) <- candidates.colnames
+
+#Finally, we'll store all five of these datasets in a list called "output", which we'll return to later
 output$districts.data <- districts.data
+output$voters.data <- voters.data
+output$activists.data <- activists.data
 output$parties.data <- parties.data
-output$voter.data <- voter.data
-head(output$activist.data)
-class(output$activist.data)
+output$candidates.data <- candidates.data
+
+
+
 ## Check constant values:
 # shape
 unique(activist.data$shape);unique(cands.data$shape);unique(districts.data$shape);unique(parties.data$shape);unique(voter.data$shape)
@@ -118,6 +200,7 @@ unique(activist.data$label);unique(cands.data$label);unique(districts.data$label
 write.table(output$globals, file="~/Dropbox/2014 Spring/Programming/globals.txt")
 write.csv(output$acvitist.data, file="~/Dropbox/2014 Spring/Programming/acvitist.csv")
 
+####PLOTS####
 
 
 
