@@ -2,8 +2,10 @@
 #Problem Set 4
 
 #Problem: Read in NetLogo File
-setwd("C:/Users/Thomas/Downloads")
-temporary <- scan(file="NetLogo.csv", what=" ", sep=",") 
+read.NetLogo <- function(file.name, file.location, read.to){
+  
+setwd(file.location)
+temporary <- scan(file=file.name, what=" ", sep=",") 
 #create object 'temporary', which contains every element of the NetLogo csv. This makes it easier to figure out 
 #how many lines we should skip to find where to begin extracting information. 
 
@@ -11,7 +13,7 @@ temporary <- scan(file="NetLogo.csv", what=" ", sep=",")
 #Start creating the main file name. Scan in the 2nd and 3rd lines of the file, and select only the first and 85th
 # elements of the vector (these correspond to the first element of each row in the csv file...which are the only
 # elements that contain any info. All the rest are empty)
-main.file.name <- scan(file="NetLogo.csv", skip=1, nlines=2, what=" ", sep=",")[c(1, 85)] 
+main.file.name <- scan(file=file.name, skip=1, nlines=2, what=" ", sep=",")[c(1, 85)] 
 main.file.name <- unlist(strsplit(main.file.name, split=" "))[-4] #use -4 to drop the 4th element, which contains some info that 
   # I don't understand, but it doesn't seem to be related to date or time
 main.file.name <- paste(main.file.name[1], main.file.name[2], main.file.name[3], sep=".")
@@ -28,12 +30,12 @@ globals.skip <- (which(temporary=="GLOBALS") - 1)/84 + 1 #calculates number of l
                                                           #etc. We subtract one to make it evenly divisible by 84; 
                                                           #then we add 1 to make sure we don't scan in the line that
                                                           #contains headings like the word 'GLOBALS'
-global.colnames <- scan(file="NetLogo.csv", skip=globals.skip, nlines=1, what=" ", sep=",") #scan in the column names for the globals
+global.colnames <- scan(file=file.name, skip=globals.skip, nlines=1, what=" ", sep=",") #scan in the column names for the globals
 
 # Second: read in the actual values for the different Global parameters. These are stored on the line
 #         right after the column names, so we simply skip the same number of lines as we did in the 
 #         last step, plus 1. 
-global.values <-  scan(file="NetLogo.csv", skip=globals.skip+1, nlines=1, what=" ", sep=",")
+global.values <-  scan(file=file.name, skip=globals.skip+1, nlines=1, what=" ", sep=",")
 
 # Third: clean up the global.values object by getting rid of brackets 
 temp <- global.values
@@ -85,7 +87,7 @@ names(globals) <- global.colnames2
 # First: decide how many lines to read in, and where to start reading in. Use the same process that was used in 
 # GLOBALS section above
 turtles.skip <- (which(temporary=="TURTLES") - 1)/84 + 1 #how many lines to skip
-turtle.names <- scan(file="NetLogo.csv", skip=turtles.skip, nlines=1, what=" ", sep=",") #read in turtle column names
+turtle.names <- scan(file=file.name, skip=turtles.skip, nlines=1, what=" ", sep=",") #read in turtle column names
 turtle.names <- turtle.names[turtle.names!=""] #get rid of missing column names
 
 turtles.end <- (which(temporary=="PATCHES") - 1)/84 - 1 #calculate when to stop scanning in data for turles
@@ -93,14 +95,14 @@ turtle.lines2read <- turtles.end - (turtles.skip + 1) #calculates number of line
                                                       #Turtles section begins from when it ends
 
 #Now read in the data itself
-turtles <- scan(file="NetLogo.csv", skip=(turtles.skip+1), nlines=turtle.lines2read, what=" ", sep=",")
+turtles <- scan(file=file.name, skip=(turtles.skip+1), nlines=turtle.lines2read, what=" ", sep=",")
   #scan in the turtle data
 
 #Next clean up the data a little by removing brackets and curly brackets
-turtles <- gsub("\\[", "", temp)
-turtles <- gsub("\\]", "", temp)
-turtles <- gsub("\\{", "", temp)
-turtles <- gsub("\\}", "", temp)
+turtles <- gsub("\\[", "", turtles)
+turtles <- gsub("\\]", "", turtles)
+turtles <- gsub("\\{", "", turtles)
+turtles <- gsub("\\}", "", turtles)
 
 turtles.mat <- matrix(turtles, nrow=turtle.lines2read, byrow=TRUE) #convert data to matrix format
 
@@ -218,18 +220,18 @@ plot.3.skip <- D3.begin + 13 #line number to start reading in data for dimension
 plot.3.end <- D4.begin - 2 #line number to stop reading in data for dimension 3
 
 #Next, create three vectors of column names for each dimension: D1, D2, and D3
-D1.names <- scan(file="NetLogo.csv", skip=plot.1.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
-D2.names <- scan(file="NetLogo.csv", skip=plot.2.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
-D3.names <- scan(file="NetLogo.csv", skip=plot.3.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+D1.names <- scan(file=file.name, skip=plot.1.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+D2.names <- scan(file=file.name, skip=plot.2.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
+D3.names <- scan(file=file.name, skip=plot.3.skip - 1, nlines=1, what=" ", sep=",") #read in D1 column names
 
 #Next, read in data for each dimension
 lines.to.read.1 <- plot.1.end - plot.1.skip
 lines.to.read.2 <- plot.2.end - plot.2.skip
 lines.to.read.3 <- plot.3.end - plot.3.skip
 
-D1.data <- scan(file="NetLogo.csv", skip=(plot.1.skip), nlines=lines.to.read.1, what=" ", sep=",")
-D2.data <- scan(file="NetLogo.csv", skip=(plot.2.skip), nlines=lines.to.read.2, what=" ", sep=",")
-D3.data <- scan(file="NetLogo.csv", skip=(plot.3.skip), nlines=lines.to.read.3, what=" ", sep=",")
+D1.data <- scan(file=file.name, skip=(plot.1.skip), nlines=lines.to.read.1, what=" ", sep=",")
+D2.data <- scan(file=file.name, skip=(plot.2.skip), nlines=lines.to.read.2, what=" ", sep=",")
+D3.data <- scan(file=file.name, skip=(plot.3.skip), nlines=lines.to.read.3, what=" ", sep=",")
 
 #A quick look at the NetLogo file reveals that none of these columns have vector elements, so we don't have to 
 # waste time dealing with that. Instead we can just convert each of these data objects above into dataframes,
@@ -261,8 +263,8 @@ Winners.begin <- ((which(temporary=="\"WINNERS\"") - 1)/84 + 1) + 10 #I add 10 a
                                                                       #in the miscellaneous information
 Winners.end <- (which(temporary=="\"POLARIZATION\"") - 1)/84 - 1 #returns 9309
 Winners.lines.to.read <- Winners.end - Winners.begin
-Winners.colnames <- scan(file="NetLogo.csv", skip=(Winners.begin - 1), nlines=1, what=" ", sep=",")
-Winners.data <- scan(file="NetLogo.csv", skip=(Winners.begin), nlines=Winners.lines.to.read, what=" ", sep=",")
+Winners.colnames <- scan(file=file.name, skip=(Winners.begin - 1), nlines=1, what=" ", sep=",")
+Winners.data <- scan(file=file.name, skip=(Winners.begin), nlines=Winners.lines.to.read, what=" ", sep=",")
 Winners.data <- data.frame(matrix(Winners.data, nrow=Winners.lines.to.read, byrow=TRUE))
 colnames(Winners.data) <- Winners.colnames
 Winners.data <- drop.missing.columns2(Winners.data)
@@ -272,8 +274,8 @@ polarization.begin <- ((which(temporary=="\"POLARIZATION\"") - 1)/84 + 1) + 10 #
                                                                               #in the miscellaneous information
 polarization.end <- (which(temporary=="\"INCUMBENT\"") - 1)/84 - 1 #returns 9490
 polarization.lines.to.read <- polarization.end - polarization.begin
-polarization.colnames <- scan(file="NetLogo.csv", skip=(polarization.begin - 1), nlines=1, what=" ", sep=",")
-polarization.data <- scan(file="NetLogo.csv", skip=(polarization.begin), nlines=polarization.lines.to.read, what=" ", sep=",")
+polarization.colnames <- scan(file=file.name, skip=(polarization.begin - 1), nlines=1, what=" ", sep=",")
+polarization.data <- scan(file=file.name, skip=(polarization.begin), nlines=polarization.lines.to.read, what=" ", sep=",")
 polarization.data <- data.frame(matrix(polarization.data, nrow=polarization.lines.to.read, byrow=TRUE))
 colnames(polarization.data) <- polarization.colnames
 polarization.data <- drop.missing.columns2(polarization.data)
@@ -283,28 +285,28 @@ incumbent.begin <- ((which(temporary=="\"INCUMBENT\"") - 1)/84 + 1) + 8 #I add 8
 #in the miscellaneous information
 incumbent.end <- (which(temporary=="EXTENSIONS") - 1)/84 - 1 #returns 9669
 incumbent.lines.to.read <- incumbent.end - incumbent.begin
-incumbent.colnames <- scan(file="NetLogo.csv", skip=(incumbent.begin - 1), nlines=1, what=" ", sep=",") #vector of column names
-incumbent.data <- scan(file="NetLogo.csv", skip=(incumbent.begin), nlines=incumbent.lines.to.read, what=" ", sep=",")
+incumbent.colnames <- scan(file=file.name, skip=(incumbent.begin - 1), nlines=1, what=" ", sep=",") #vector of column names
+incumbent.data <- scan(file=file.name, skip=(incumbent.begin), nlines=incumbent.lines.to.read, what=" ", sep=",")
 incumbent.data <- data.frame(matrix(incumbent.data, nrow=incumbent.lines.to.read, byrow=TRUE))
 colnames(incumbent.data) <- incumbent.colnames
 incumbent.data <- drop.missing.columns2(incumbent.data)
 
 ####WRITING THE FILES####
-setwd("C:/Users/Thomas/Desktop") #sets the working directory to wherever you want the file stored
+setwd(read.to) #sets the working directory to wherever you want the file stored
 dir.create(main.file.name) #creates the main folder that everything else gets stored in; REMINDER: main.file.name
                             #was one of the first objects we created up above
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, sep="")) #resets the working directory to the main folder
+setwd(paste(read.to, "/", main.file.name, sep="")) #resets the working directory to the main folder
 dir.create("GLOBALS")
 dir.create("TURTLES")
 dir.create("PLOTS")
 
 #Next, we use the dump() function to write the .R file for the Globals object into the GLOBALS folder. We start
 #by redefining the working directory:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/GLOBALS", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/GLOBALS", sep=""))
 dump("globals", file="Globals.R")
 
 #Next, write .csv files to TURTLE subdirectory. Start by redefining the working directory, then write in each file
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/TURTLES", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/TURTLES", sep=""))
 write.csv(districts.data, file="Districts.csv")
 write.csv(voters.data, file="Voters.csv")
 write.csv(activists.data, file="Activists.csv")
@@ -312,14 +314,14 @@ write.csv(parties.data, file="Parties.csv")
 write.csv(candidates.data, file="Candidates.csv")
 
 #Next, create subdirectories to the PLOTS directory. Begin by redefining the working directory:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/PLOTS", sep=""))
 dir.create("PositionPlot")
 dir.create("WinnersPlot")
 dir.create("PolarizationPlot")
 dir.create("IncumbentsPlot")
 
 #Next create the 3 .csv files for the PositionPlot folder:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/PositionPlot", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/PLOTS", "/PositionPlot", sep=""))
 write.csv(D1.data, file="D1.csv")
 write.csv(D2.data, file="D2.csv")
 write.csv(D3.data, file="D3.csv")
@@ -358,7 +360,7 @@ legend("top", c("Rep. Candidate", "Dem. Candidate", "Rep. Voter", "Dem. Voter", 
 dev.off()
 
 #Next create the .csv file for the WinnersPlot folder:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/WinnersPlot", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/PLOTS", "/WinnersPlot", sep=""))
 write.csv(Winners.data, file="Winner.csv")
 
 #Next we create the .pdf file:
@@ -371,7 +373,7 @@ lines(as.numeric(as.character(Winners.data[,9])), as.numeric(as.character(Winner
 dev.off()
 
 #Next create the .csv file for the Polarization directory:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/PolarizationPlot", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/PLOTS", "/PolarizationPlot", sep=""))
 write.csv(polarization.data, file="Polarization.csv")
 
 #Next we create the .pdf file:
@@ -384,7 +386,7 @@ legend("bottomright", c("Candidates", "Voters", "Activists"), col=c("black", "da
 dev.off()
 
 #Next create the .csv file for the Incumbents directory:
-setwd(paste("C:/Users/Thomas/Desktop", "/", main.file.name, "/PLOTS", "/IncumbentsPlot", sep=""))
+setwd(paste(read.to, "/", main.file.name, "/PLOTS", "/IncumbentsPlot", sep=""))
 write.csv(incumbent.data, file="IncumbentWins.csv")
 
 #Finally, we create the .pdf file for the Incumbents subdirectory:
@@ -393,8 +395,9 @@ plot(as.numeric(as.character(incumbent.data[,1])), as.numeric(as.character(incum
      xlab="Time Period", ylab="Percent of Incumbents in Each Party Who Win Election")
 dev.off()
 
+} #ends the function
 
-
+read.NetLogo(file.name="NetLogo.csv", file.location="C:/Users/Thomas/Downloads", read.to="C:/Users/Thomas/Desktop")
 
 ####JMR####
 ####Chapter 4, Problem 3####
